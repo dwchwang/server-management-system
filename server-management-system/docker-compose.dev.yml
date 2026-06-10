@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+  elasticsearch:
+    extends:
+      file: docker-compose.yml
+      service: elasticsearch
+  kafka:
+    extends:
+      file: docker-compose.yml
+      service: kafka
+  kafka-init:
+    extends:
+      file: docker-compose.yml
+      service: kafka-init
+  tcp-simulator:
+    extends:
+      file: docker-compose.yml
+      service: tcp-simulator

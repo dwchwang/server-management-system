@@ -1,0 +1,5 @@
+module github.com/vcs-sms/api-gateway
+
+go 1.24.0
+
+replace github.com/vcs-sms/shared => ../shared
