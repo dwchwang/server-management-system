@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   postgres:
     extends:
@@ -24,3 +23,16 @@ services:
     extends:
       file: docker-compose.yml
       service: tcp-simulator
+
+networks:
+  vcs-network:
+    driver: bridge
+    name: vcs-network
+
+volumes:
+  postgres_data:
+    name: vcs-sms-postgres-data
+  redis_data:
+    name: vcs-sms-redis-data
+  es_data:
+    name: vcs-sms-es-data

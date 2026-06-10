@@ -35,20 +35,30 @@ test: ## Run all tests with coverage
 	cd auth-service && go test ./... -coverprofile=coverage.out -covermode=atomic -v
 	@echo "=== Testing server-service ==="
 	cd server-service && go test ./... -coverprofile=coverage.out -covermode=atomic -v
-	@echo "=== Testing monitor-service ==="
-	cd monitor-service && go test ./... -coverprofile=coverage.out -covermode=atomic -v
-	@echo "=== Testing report-service ==="
-	cd report-service && go test ./... -coverprofile=coverage.out -covermode=atomic -v
-	@echo "=== Testing fileio-service ==="
-	cd fileio-service && go test ./... -coverprofile=coverage.out -covermode=atomic -v
+	@echo "=== Testing api-gateway ==="
+	cd api-gateway && go test ./... -coverprofile=coverage.out -covermode=atomic -v
 
 coverage: ## Generate HTML coverage reports
-	@for svc in shared auth-service server-service monitor-service report-service fileio-service; do \
+	@for svc in shared auth-service server-service api-gateway; do \
 		echo ">>> $$svc coverage:"; \
 		cd $$svc && go tool cover -func=coverage.out | tail -1 && cd ..; \
 		go tool cover -html=$$svc/coverage.out -o $$svc/coverage.html; \
 	done
 	@echo "Coverage reports generated."
+
+# ── Mock Generation ──
+mocks: ## Generate mocks with mockery
+	@echo "Generating mocks..."
+	@go install github.com/vektra/mockery/v2@latest 2>/dev/null || true
+	mockery
+	@echo "Mocks generated."
+
+# ── Deps ──
+deps: ## Install all dependencies
+	cd shared && go mod tidy
+	cd auth-service && go mod tidy
+	cd server-service && go mod tidy
+	cd api-gateway && go mod tidy
 
 # ── Run ──
 seed: ## Seed 10.000 servers into PostgreSQL

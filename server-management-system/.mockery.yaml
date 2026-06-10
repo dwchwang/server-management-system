@@ -1,0 +1,20 @@
+# ── .mockery.yaml ──
+# Mockery config for VCS-SMS
+# Usage: mockery
+
+with-expecter: true
+packages:
+  github.com/vcs-sms/auth-service/internal/repository:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName}}_mock.go"
+      outpkg: "mocks"
+    interfaces:
+      UserRepository:
+  github.com/vcs-sms/server-service/internal/repository:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName}}_mock.go"
+      outpkg: "mocks"
+    interfaces:
+      ServerRepository:
