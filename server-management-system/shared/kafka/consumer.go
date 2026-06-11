@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -8,7 +9,8 @@ import (
 )
 
 // DummyConsumer is a placeholder Kafka consumer.
-// Will be replaced with real Sarama or confluent-kafka-go implementation in Phase 1.
+// Use for development/testing when Kafka is unavailable.
+// Real implementation: SegmentioConsumer (segmentio/kafka-go).
 type DummyConsumer struct {
 	mu       sync.Mutex
 	handlers map[string]EventHandler // topic → handler
@@ -41,8 +43,10 @@ func (c *DummyConsumer) Subscribe(topic, groupID string, handler EventHandler) e
 	return nil
 }
 
-func (c *DummyConsumer) Start() error {
+func (c *DummyConsumer) Start(ctx context.Context) error {
 	c.logger.Info().Msg("Kafka consumer started (dummy mode — no actual consumption)")
+	// Block until context cancelled
+	<-ctx.Done()
 	return nil
 }
 

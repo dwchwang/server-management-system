@@ -36,3 +36,64 @@ Trong dự án này, chúng ta sử dụng Apache Kafka 3.9 ở chế độ KRaf
 1. **Luồng Cập nhật Server**: `server-service` CRUD DB xong -> Bắn event `server.created/updated/deleted`. `monitor-service` nghe để cập nhật lại danh sách mục tiêu cần ping.
 2. **Luồng Trạng thái (Status)**: `monitor-service` check thấy server sập -> Bắn event `server.status.changed`. Bất cứ service nào quan tâm (VD hệ thống Alert sau này) có thể nghe.
 3. **Luồng Batch Log**: Mỗi 1 phút có 10.000 kết quả ping. `monitor-service` gom lại thành 1 mảng lớn (Batch) -> Bắn event `server.health.batch`. `report-service` (hoặc logstash) nghe để đẩy vào Elasticsearch tối ưu hóa network.
+
+## 5. Go Kafka Client: segmentio/kafka-go
+
+### Tại sao chọn segmentio/kafka-go thay vì IBM/sarama?
+
+| Tiêu chí | segmentio/kafka-go | IBM/sarama |
+|----------|:------------------:|:----------:|
+| **Pure Go** | ✅ Có (không CGo) | ✅ Có |
+| **Context support** | ✅ Native (`context.Context` trong mọi API) | ⚠️ Partial |
+| **API simplicity** | ⭐ `WriteMessages()`/`ReadMessage()` | ⭐⭐ Cần ConsumerGroupHandler |
+| **Connection management** | Tự động reconnect, health-check | Manual qua config |
+| **Performance** | Tốt cho high-throughput | Tốt, nhưng nặng hơn |
+| **Dependencies** | Nhẹ, ít transitive deps | Nhiều transitive deps (gokrb5, etc.) |
+| **Community** | 14K+ stars, Segment (Twilio) maintain | 11K+ stars, IBM maintain |
+
+**Lý do chọn `segmentio/kafka-go`:**
+1. **API đơn giản hơn**: `Writer` cho producer, `Reader` cho consumer — không cần ConsumerGroupHandler phức tạp.
+2. **Context-native**: Mọi method đều nhận `context.Context`, phù hợp với pattern Go chuẩn.
+3. **Ít dependencies hơn**: Không kéo theo `gokrb5` (Kerberos), `gofork`, giảm attack surface.
+4. **Tự động reconnect**: Writer/Reader tự reconnect khi mất kết nối — không cần code retry.
+
+### Producer Pattern (Writer)
+
+```go
+w := &kafka.Writer{
+    Addr:         kafka.TCP("localhost:9092"),
+    Balancer:     &kafka.LeastBytes{},
+    BatchSize:    100,
+    BatchTimeout: 100 * time.Millisecond,
+    RequiredAcks: kafka.RequireAll,
+    Compression:  kafka.Snappy,
+}
+defer w.Close()
+
+err := w.WriteMessages(ctx, kafka.Message{
+    Topic: "server.health.batch",
+    Key:   []byte(serverID),
+    Value: jsonBytes,
+})
+```
+
+### Consumer Pattern (Reader)
+
+```go
+r := kafka.NewReader(kafka.ReaderConfig{
+    Brokers:        []string{"localhost:9092"},
+    GroupID:        "monitor-group",
+    Topic:          "server.created",
+    MinBytes:       10e3,
+    MaxBytes:       10e6,
+    CommitInterval: 5 * time.Second,
+    StartOffset:    kafka.LastOffset,
+})
+defer r.Close()
+
+for {
+    msg, err := r.ReadMessage(ctx)
+    if err != nil { break }
+    // xử lý msg.Value
+}
+```

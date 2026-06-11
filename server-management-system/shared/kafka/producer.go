@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -8,7 +9,8 @@ import (
 )
 
 // DummyProducer is a placeholder Kafka producer.
-// Will be replaced with real Sarama or confluent-kafka-go implementation in Phase 1.
+// Use for development/testing when Kafka is unavailable.
+// Real implementation: SegmentioProducer (segmentio/kafka-go).
 type DummyProducer struct {
 	mu     sync.Mutex
 	closed bool
@@ -20,7 +22,7 @@ func NewDummyProducer(logger zerolog.Logger) *DummyProducer {
 	return &DummyProducer{logger: logger}
 }
 
-func (p *DummyProducer) Publish(topic string, key string, value interface{}) error {
+func (p *DummyProducer) Publish(ctx context.Context, topic string, key string, value interface{}) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

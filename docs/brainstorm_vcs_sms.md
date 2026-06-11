@@ -2679,7 +2679,7 @@ LOG_COMPRESS=true
 | **sqlmock** | latest | Database mock cho tests |
 | **golang-migrate** | v4 | Database migrations |
 | **go-redis** | v9 | Redis client |
-| **sarama** (IBM) | latest | Kafka client |
+| **segmentio/kafka-go** | latest | Kafka client (pure Go, context-native) |
 | **elastic/go-elasticsearch** | v8 | Elasticsearch client |
 | **gomail** | v2 | SMTP email sender |
 

@@ -30,11 +30,14 @@ func TestServerRepository_Create(t *testing.T) {
 	db, mock := setupServerTestDB(t)
 	repo := NewServerRepository(db)
 
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO "server_schema"."servers"`)).
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
+	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "server_schema"."servers"`)).
+		WithArgs(
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(),
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uuid.New()))
 
 	s := &model.Server{
 		ServerID: "SRV-001", ServerName: "test", Status: "off",
@@ -53,7 +56,7 @@ func TestServerRepository_FindByServerID(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "server_id", "server_name", "status", "ipv4", "os", "cpu_cores", "ram_gb", "disk_gb", "location", "description", "created_at", "updated_at", "deleted_at"}).
 		AddRow(uuid.New(), "SRV-001", "test", "off", "10.0.0.1", "", nil, nil, nil, "", "", nil, nil, nil)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "server_schema"."servers" WHERE server_id = $1 AND "server_schema"."servers"."deleted_at" IS NULL ORDER BY "server_schema"."servers"."id" LIMIT $2`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "server_schema"."servers" WHERE server_id = $1 AND "servers"."deleted_at" IS NULL ORDER BY "servers"."id" LIMIT $2`)).
 		WithArgs("SRV-001", 1).
 		WillReturnRows(rows)
 
@@ -89,11 +92,11 @@ func TestServerRepository_FindAll(t *testing.T) {
 		AddRow(uuid.New(), "SRV-002", "db", "off", "10.0.0.2", "", nil, nil, nil, "", "", nil, nil, nil)
 
 	// Count query
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE "server_schema"."servers"."deleted_at" IS NULL`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE "servers"."deleted_at" IS NULL`)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 
 	// Data query (with order + limit/offset)
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "server_schema"."servers" WHERE "server_schema"."servers"."deleted_at" IS NULL ORDER BY created_at DESC LIMIT $1`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "server_schema"."servers" WHERE "servers"."deleted_at" IS NULL ORDER BY created_at DESC LIMIT $1`)).
 		WithArgs(20).
 		WillReturnRows(rows)
 
@@ -113,7 +116,7 @@ func TestServerRepository_ExistsByServerID(t *testing.T) {
 	db, mock := setupServerTestDB(t)
 	repo := NewServerRepository(db)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE server_id = $1 AND "server_schema"."servers"."deleted_at" IS NULL`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE server_id = $1 AND "servers"."deleted_at" IS NULL`)).
 		WithArgs("SRV-001").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
@@ -130,7 +133,7 @@ func TestServerRepository_ExistsByServerName(t *testing.T) {
 	db, mock := setupServerTestDB(t)
 	repo := NewServerRepository(db)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE server_name = $1 AND "server_schema"."servers"."deleted_at" IS NULL`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "server_schema"."servers" WHERE server_name = $1 AND "servers"."deleted_at" IS NULL`)).
 		WithArgs("my-server").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 
@@ -147,11 +150,9 @@ func TestServerRepository_Delete(t *testing.T) {
 	db, mock := setupServerTestDB(t)
 	repo := NewServerRepository(db)
 
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "server_schema"."servers" SET "deleted_at"=$1 WHERE server_id = $2 AND "server_schema"."servers"."deleted_at" IS NULL`)).
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "server_schema"."servers" SET "deleted_at"=$1 WHERE server_id = $2 AND "servers"."deleted_at" IS NULL`)).
 		WithArgs(sqlmock.AnyArg(), "SRV-001").
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
 
 	err := repo.Delete(context.Background(), "SRV-001")
 	if err != nil {
@@ -163,12 +164,10 @@ func TestServerRepository_Update(t *testing.T) {
 	db, mock := setupServerTestDB(t)
 	repo := NewServerRepository(db)
 
-	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "server_schema"."servers"`)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
 
-	s := &model.Server{ServerID: "SRV-001", ServerName: "updated", IPv4: "10.0.0.1"}
+	s := &model.Server{ID: uuid.New(), ServerID: "SRV-001", ServerName: "updated", IPv4: "10.0.0.1"}
 	err := repo.Update(context.Background(), s)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)

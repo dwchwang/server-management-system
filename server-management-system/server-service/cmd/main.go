@@ -40,7 +40,7 @@ func main() {
 	// 4. Connect Redis
 	rdb := database.ConnectRedis(cfg.Redis)
 
-	// 5. Init Kafka producer (dummy for now — real Sarama in Phase 1+)
+	// 5. Init Kafka producer (dummy for now — real segmentio/kafka-go in Phase 2)
 	producer := kafka.NewDummyProducer(log)
 
 	// 6. Init layers

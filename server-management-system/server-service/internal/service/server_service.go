@@ -288,7 +288,7 @@ func (s *serverServiceImpl) publishEvent(eventType, serverID string, data interf
 		Source:    "server-service",
 		Data:      data,
 	}
-	if err := s.producer.Publish(eventType, serverID, event); err != nil {
+	if err := s.producer.Publish(context.Background(), eventType, serverID, event); err != nil {
 		// Log but don't block the request
 		fmt.Printf("[Kafka] Failed to publish %s: %v\n", eventType, err)
 	}
