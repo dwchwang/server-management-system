@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 10px 0 0; opacity: 0.9; }
+        .content { padding: 30px; }
+        .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-card { text-align: center; padding: 15px; }
+        .stat-value { font-size: 28px; font-weight: bold; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+        .on { color: #27ae60; }
+        .off { color: #e74c3c; }
+        .uptime { color: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6; }
+        td { padding: 10px; border-bottom: 1px solid #dee2e6; }
+        .no-data { text-align: center; color: #666; padding: 20px; font-style: italic; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Báo cáo trạng thái Server</h1>
+            <p>{{.ReportDate}}</p>
+        </div>
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{.TotalServers}}</div>
+                    <div class="stat-label">Tổng Server</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value on">{{.ServersOn}}</div>
+                    <div class="stat-label">🟢 Online</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value off">{{.ServersOff}}</div>
+                    <div class="stat-label">🔴 Offline</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value uptime">{{printf "%.2f" .AvgUptimePct}}%</div>
+                    <div class="stat-label">📈 Avg Uptime</div>
+                </div>
+            </div>
+
+            <h3>⚠️ Top {{len .LowUptimeServers}} Server có uptime thấp nhất</h3>
+            {{if .LowUptimeServers}}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Server ID</th>
+                        <th>Server Name</th>
+                        <th>Uptime</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .LowUptimeServers}}
+                    <tr>
+                        <td>{{.ServerID}}</td>
+                        <td>{{.ServerName}}</td>
+                        <td>{{printf "%.2f" .UptimePct}}%</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="no-data">Không có dữ liệu</div>
+            {{end}}
+        </div>
+        <div class="footer">
+            VCS Server Management System — Automated Report
+        </div>
+    </div>
+</body>
+</html>
